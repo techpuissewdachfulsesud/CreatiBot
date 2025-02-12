@@ -1,197 +1,242 @@
-<!DOCTYPE html> <html lang = "cs" > <head> <meta charset = "UTF-8" > <meta name = "viewport" content = "width=device-width, initial-scale=1.0" > <title> CreatiBot </title> <style> 
-body.light-theme {
-  background-color: #f9f9f9;
-  color: #000;
-}
-body.dark-theme {
-  background-color: #1e1e1e;
-  color: #fff;
-}
-.chat-container {
-  max-width: 600px;
-  margin: 0 auto;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 10px;
-  overflow-y: auto;
-  height: 400px;
-  background-color: #fff;
-}
-.message {
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 8px;
-  max-width: 80%;
-  word-wrap: break-word;
-}
-.message.bot {
-  background-color: #a5d6a7;
-  margin-left: auto;
-}
-.message.user {
-  background-color: #90caf9;
-  margin-right: auto;
-}
-.input-container {
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-.input-container input[type="text"] {
-  flex: 1;
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-.input-container button {
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-}
-button:disabled {
-  background-color: #ddd;
-  cursor: not-allowed;
-}
-.theme-toggle {
-  margin-top: 20px;
-  cursor: pointer;
-  font-size: 14px;
-  text-align: center;
-}
-</style>
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CreatiBot 2.0.2</title>
+  <style>
+    body.light-theme { background-color: #f9f9f9; color: #000; }
+    body.dark-theme { background-color: #1e1e1e; color: #fff; }
+    .chat-container {
+      max-width: 600px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      height: 400px;
+      background-color: #fff;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .message.show { opacity: 1; }
+    .message.bot { background-color: #a5d6a7; margin-left: auto; }
+    .message.user { background-color: #90caf9; margin-right: auto; }
+    .timestamp {
+      display: block;
+      font-size: 0.75em;
+      text-align: right;
+      margin-top: 5px;
+      color: #666;
+    }
+    .input-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      justify-content: center;
+    }
+    .input-container input {
+      flex: 1;
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .input-container button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #ddd;
+      cursor: not-allowed;
+    }
+    .theme-toggle {
+      margin-top: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      text-align: center;
+    }
+    .typing-indicator {
+      font-style: italic;
+      color: gray;
+    }
+  </style>
 </head>
 <body>
-<div class="chat-container" id="chat-container" aria-live="polite">
-  <div class="message bot">Ahoj! Jsem CreatiBot. Jak vám mohu pomoci?</div>
-</div>
-<div class="input-container">
-  <input type="text" id="user-input" placeholder="Napište zprávu..." aria-label="Vaše zpráva">
-  <button id="send-button" disabled>Odeslat</button>
-  <button id="new-chat">Nový chat</button>
-  <button id="theme-toggle">Přepnout téma</button>
-</div>
-<script>
-const predefinedResponses = [
-  { keywords: ['ahoj', 'čau', 'zdravím'], response: 'Ahoj! Jak se máte?' },
-  { keywords: ['pomoc', 'help'], response: 'Rád vám pomůžu! Co přesně potřebujete?' },
-  { keywords: ['díky', 'děkuji'], response: 'Nemáte zač! Jsem tu pro vás.' },
-  { keywords: ['kdo jsi', 'co jsi'], response: 'Jsem váš virtuální pomocník, CreatiBot.' },
-  { keywords: ['čas'], response: `Aktuální čas je: ` }
-]; const chatContainer = document.getElementById('chat-container');
-const userInput = document.getElementById('user-input');
-const sendButton = document.getElementById('send-button');
+  <div class="chat-container" id="chat-container" aria-live="polite">
+    <!-- Výchozí uvítací zpráva -->
+    <div class="message bot show">
+      <span>Ahoj! Jsem CreatiBot 2.0.2. Jak vám mohu pomoci?</span>
+      <span class="timestamp"><script>document.write(new Date().toLocaleTimeString());</script></span>
+    </div>
+  </div>
+  <div class="input-container">
+    <input type="text" id="user-input" placeholder="Napište zprávu..." aria-label="Vaše zpráva">
+    <button id="send-button" disabled>Odeslat</button>
+    <button id="new-chat">Nový chat</button>
+    <button id="theme-toggle">Přepnout téma</button>
+  </div>
+  <script>
+    // Pravidla odpovědí s podporou vícero variant
+    const responseRules = [
+      { keywords: ['ahoj', 'čau', 'zdravím'], responses: ['Ahoj! Jak se máš?', 'Nazdar, jak se vede?', 'Čau, co nového?'] },
+      { keywords: ['pomoc', 'help'], responses: ['Rád pomůžu! Co přesně potřebuješ?', 'Jak ti můžu pomoci?', 'S čím potřebuješ poradit?'] },
+      { keywords: ['díky', 'děkuji'], responses: ['Nemáš zač! Jsem tu pro tebe.', 'Rád jsem pomohl!', 'To mě těší!'] },
+      { keywords: ['kdo jsi', 'co jsi'], responses: ['Jsem virtuální pomocník, CreatiBot 2.0.2.', 'Tady je CreatiBot 2.0.2, tvůj přítel.'] },
+      { keywords: ['čas'], responses: [() => `Aktuální čas je: ${new Date().toLocaleTimeString()}`] }
+    ];
 
-// Povolení tlačítka Odeslat
-userInput.addEventListener('input', () => {
-  sendButton.disabled = !userInput.value.trim();
-});
+    const chatContainer = document.getElementById('chat-container');
+    const userInput = document.getElementById('user-input');
+    const sendButton = document.getElementById('send-button');
 
-// Odeslání zprávy
-sendButton.addEventListener('click', () => {
-  const message = sanitizeInput(userInput.value.trim());
-  if (message) {
-    appendMessage(message, 'user');
-    userInput.value = '';
-    sendButton.disabled = true;
+    // Umožnění odeslání zprávy pomocí Enter
+    userInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && userInput.value.trim()) {
+        event.preventDefault();
+        sendMessage();
+      }
+    });
 
-    botTyping(true);
-    setTimeout(() => {
-      const response = generateResponse(message);
-      appendMessage(response, 'bot');
-      botTyping(false);
-      saveHistory();
-    }, 1000);
-  }
-});
+    userInput.addEventListener('input', () => {
+      sendButton.disabled = !userInput.value.trim();
+    });
 
-// Funkce pro generování odpovědi
-function generateResponse(input) {
-  for (const { keywords, response } of predefinedResponses) {
-    if (keywords.some(keyword => input.toLowerCase().includes(keyword))) {
-      return response;
+    sendButton.addEventListener('click', sendMessage);
+
+    function sendMessage() {
+      const message = sanitizeInput(userInput.value.trim());
+      if (message) {
+        appendMessage(message, 'user');
+        userInput.value = '';
+        sendButton.disabled = true;
+        botTyping(true);
+        // Dynamická prodleva podle délky zprávy (min 200ms, max 2000ms)
+        setTimeout(() => {
+          appendMessage(generateResponse(message), 'bot');
+          botTyping(false);
+          saveHistory();
+        }, Math.min(200 + message.length * 20, 2000));
+      }
     }
-  }
-  return 'Promiňte, nerozumím. Můžete to prosím zopakovat?';
-}
 
-// Funkce pro přidání zprávy
-function appendMessage(content, type) {
-  const message = document.createElement('div');
-  message.className = `message `;
-  message.textContent = content;
-  chatContainer.appendChild(message);
-  chatContainer.scrollTop = chatContainer.scrollHeight;
-}
+    function generateResponse(input) {
+      for (const rule of responseRules) {
+        if (rule.keywords.some(keyword => input.toLowerCase().includes(keyword))) {
+          const chosen = rule.responses[Math.floor(Math.random() * rule.responses.length)];
+          return typeof chosen === 'function' ? chosen() : chosen;
+        }
+      }
+      return 'Promiň, ale tomu nerozumím.';
+    }
 
-// Funkce pro zobrazení psaní bota
-function botTyping(isTyping) {
-  const typingIndicator = document.getElementById('typing-indicator');
-  if (isTyping) {
-    if (!typingIndicator) {
-      const indicator = document.createElement('div');
-      indicator.id = 'typing-indicator';
-      indicator.textContent = 'Bot píše...';
-      chatContainer.appendChild(indicator);
+    // Funkce appendMessage nyní podporuje volitelný čas (timestamp)
+    function appendMessage(content, type, time = null) {
+      const message = document.createElement('div');
+      message.className = `message ${type}`;
+      
+      const contentSpan = document.createElement('span');
+      contentSpan.textContent = content;
+      message.appendChild(contentSpan);
+      
+      const timeStamp = document.createElement('span');
+      timeStamp.className = 'timestamp';
+      timeStamp.textContent = time ? time : new Date().toLocaleTimeString();
+      message.appendChild(timeStamp);
+      
+      chatContainer.appendChild(message);
+      // Přidání třídy pro efekt postupného zobrazení (fade-in)
+      setTimeout(() => message.classList.add('show'), 10);
       chatContainer.scrollTop = chatContainer.scrollHeight;
     }
-  } else if (typingIndicator) {
-    typingIndicator.remove();
-  }
-}
 
-// Uložení historie chatu
-function saveHistory() {
-  localStorage.setItem('chatHistory', chatContainer.innerHTML);
-}
+    // Vizualizace "přemýšlení" bota
+    function botTyping(isTyping) {
+      let typingIndicator = document.getElementById('typing-indicator');
+      if (isTyping) {
+        if (!typingIndicator) {
+          typingIndicator = document.createElement('div');
+          typingIndicator.id = 'typing-indicator';
+          typingIndicator.className = 'typing-indicator';
+          typingIndicator.textContent = 'Bot přemýšlí...';
+          chatContainer.appendChild(typingIndicator);
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+      } else if (typingIndicator) {
+        // Krátká prodleva před odstraněním indikátoru
+        setTimeout(() => typingIndicator.remove(), 500);
+      }
+    }
 
-// Načtení historie chatu
-function loadHistory() { const history = localStorage.getItem('chatHistory');
-  if (history) {
-    chatContainer.innerHTML = history;
-  }
-}
+    // Ukládání historie jako JSON (pole objektů)
+    function saveHistory() {
+      const messages = Array.from(document.querySelectorAll('.message')).map(msg => ({
+        text: msg.querySelector('span').textContent,
+        type: msg.classList.contains('bot') ? 'bot' : 'user',
+        time: msg.querySelector('.timestamp').textContent
+      }));
+      localStorage.setItem('chatHistory', JSON.stringify(messages));
+    }
 
-// Přepnutí tématu
-function toggleTheme() {
-  document.body.classList.toggle('light-theme');
-  document.body.classList.toggle('dark-theme');
-  const theme = document.body.classList.contains('light-theme') ? 'light' : 'dark';
-  localStorage.setItem('theme', theme);
-}
+    // Načítání historie a dynamické zobrazení zpráv
+    function loadHistory() {
+      const history = JSON.parse(localStorage.getItem('chatHistory') || '[]');
+      chatContainer.innerHTML = ''; // Vyčistíme obsah
+      if (history.length > 0) {
+        history.forEach(({ text, type, time }) => {
+          appendMessage(text, type, time);
+        });
+      } else {
+        // Pokud není uložená historie, zobrazíme uvítací zprávu
+        appendMessage("Ahoj! Jsem CreatiBot 2.0.2. Jak vám mohu pomoci?", 'bot');
+      }
+    }
 
-function initializeTheme() {
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme) {
-    document.body.classList.add(savedTheme === 'light' ? 'light-theme' : 'dark-theme');
-  } else {
-    document.body.classList.add('dark-theme');
-  }
-}
+    // Přepínání témat
+    function toggleTheme() {
+      document.body.classList.toggle('light-theme');
+      document.body.classList.toggle('dark-theme');
+      localStorage.setItem('theme', document.body.classList.contains('light-theme') ? 'light' : 'dark');
+    }
 
-// Funkce pro sanitizaci vstupu
-function sanitizeInput(input) {
-  const div = document.createElement('div');
-  div.textContent = input;
-  return div.innerHTML;
-}
+    function initializeTheme() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        document.body.classList.add(savedTheme === 'light' ? 'light-theme' : 'dark-theme');
+      } else {
+        // Defaultně nastavíme světlé téma
+        document.body.classList.add('light-theme');
+      }
+    }
 
-// Vymazání historie při novém chatu
-document.getElementById('new-chat').addEventListener('click', () => {
-  chatContainer.innerHTML = '<div class="message bot">Ahoj! Jsem CreatiBot. Jak vám mohu pomoci?</div>';
-  localStorage.removeItem('chatHistory');
-});
+    // Sanitizace vstupu (ochrana proti XSS)
+    function sanitizeInput(input) {
+      const div = document.createElement('div');
+      div.textContent = input;
+      return div.innerHTML;
+    }
 
-// Načtení uloženého tématu a historie při načtení stránky
-document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-window.addEventListener('DOMContentLoaded', () => {
-  loadHistory();
-  initializeTheme();
-});
-</script>
+    document.getElementById('new-chat').addEventListener('click', () => {
+      chatContainer.innerHTML = '';
+      appendMessage("Ahoj! Jsem CreatiBot 2.0.2. Jak vám mohu pomoci?", 'bot');
+      localStorage.removeItem('chatHistory');
+    });
+
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    window.addEventListener('DOMContentLoaded', () => {
+      loadHistory();
+      initializeTheme();
+    });
+  </script>
 </body>
 </html>
